@@ -1,12 +1,5 @@
 from timeit import timeit
-import article1
-import article2
-
-text1 = article1.text
-text2 = article2.text
-
-pattern_found = "ресурс"
-pattern_absent = "вугілля будня"
+import re
 
 def compute_lps(pattern):
     lps = [0] * len(pattern)
@@ -49,11 +42,6 @@ def kmp_search(main_string, pattern):
 
     return -1  # якщо підрядок не знайдено
 
-kmp_exist_atr1 = timeit(lambda: kmp_search(text1, pattern_found), number=1)
-kmp_absent_atr1 = timeit(lambda: kmp_search(text1, pattern_absent), number=1)
-kmp_exist_atr2 = timeit(lambda: kmp_search(text2, pattern_found), number=1)
-kmp_absent_atr2 = timeit(lambda: kmp_search(text2, pattern_absent), number=1)
-
 def build_shift_table(pattern):
   """Створити таблицю зсувів для алгоритму Боєра-Мура."""
   table = {}
@@ -88,11 +76,6 @@ def boyer_moore_search(text, pattern):
 
   # Якщо підрядок не знайдено, повертаємо -1
   return -1
-
-bm_exist_atr1 = timeit(lambda: boyer_moore_search(text1, pattern_found), number=1)
-bm_absent_atr1 = timeit(lambda: boyer_moore_search(text1, pattern_absent), number=1)
-bm_exist_atr2 = timeit(lambda: boyer_moore_search(text2, pattern_found), number=1)
-bm_absent_atr2 = timeit(lambda: boyer_moore_search(text2, pattern_absent), number=1)
 
 def polynomial_hash(s, base=256, modulus=101):
     """
@@ -135,23 +118,68 @@ def rabin_karp_search(main_string, substring):
 
     return -1
 
-rk_exist_atr1 = timeit(lambda: rabin_karp_search(text1, pattern_found), number=1)
-rk_absent_atr1 = timeit(lambda: rabin_karp_search(text1, pattern_absent), number=1)
-rk_exist_atr2 = timeit(lambda: rabin_karp_search(text2, pattern_found), number=1)
-rk_absent_atr2 = timeit(lambda: rabin_karp_search(text2, pattern_absent), number=1)
+def regex_search(main_string, pattern):
+    match = re.search(pattern, main_string)
+    if match:
+        return match.start()
+    else:
+        return -1
 
-print(f"KMP found for article 1: {kmp_exist_atr1:.6f} seconds")
-print(f"BM found for article 1: {bm_exist_atr1:.6f} seconds")
-print(f"RK found for article 1: {rk_exist_atr1:.6f} seconds")
+# using read file because of python cache created if using varaible import
+def read_file(file_path):
+    with open(file_path, 'r', encoding='utf-8') as file:
+        return file.read()
 
-print(f"KMP absent for article 1: {kmp_absent_atr1:.6f} seconds")
-print(f"BM absent for article 1: {bm_absent_atr1:.6f} seconds")
-print(f"RK absent for article 1: {rk_absent_atr1:.6f} seconds")
+def measure_search_time(func, text, pattern):
+    setup_code = f'''from __main__ import {func.__name__}'''
+    stmt = f"{func.__name__}(text, pattern)"
+    return timeit(stmt, setup=setup_code, globals={'text': text, 'pattern': pattern}, number=10)
 
-print(f"KMP found for article 2: {kmp_exist_atr2:.6f} seconds")
-print(f"BM found for article 2: {bm_exist_atr2:.6f} seconds")
-print(f"RK found for article 2: {rk_exist_atr2:.6f} seconds")
+if __name__ == "__main__":
+    text1 = read_file('article1.txt')
+    text2 = read_file('article2.txt')
 
-print(f"KMP absent for article 2: {kmp_absent_atr2:.6f} seconds")
-print(f"BM absent for article 2: {bm_absent_atr2:.6f} seconds")
-print(f"RK absent for article 2: {rk_absent_atr2:.6f} seconds")
+    pattern_found = "ресурс"
+    pattern_absent = "вугілля будня"
+    
+    funcs = [kmp_search, boyer_moore_search, rabin_karp_search, regex_search]
+    print(f"{'Стаття':<6} | {'Алгоритм':<30} | {'Підрядок':<20} | {'Час (секунди)':<15}")
+    print('-'*80)
+    for i, text in enumerate([text1, text2]):
+        for pattern in [pattern_found, pattern_absent]:
+            for search_func in funcs:
+                time = measure_search_time(search_func, text, pattern)
+                res = ('№ '+str(i+1), search_func.__name__, pattern, time)
+                print(f"{res[0]:<6} | {res[1]:<30} | {res[2]:<20} | {res[3]:<15.10f}")
+            print('-'*80)
+
+# kmp_exist_atr1 = timeit(lambda: kmp_search(text1, pattern_found), number=1)
+# kmp_absent_atr1 = timeit(lambda: kmp_search(text1, pattern_absent), number=1)
+# kmp_exist_atr2 = timeit(lambda: kmp_search(text2, pattern_found), number=1)
+# kmp_absent_atr2 = timeit(lambda: kmp_search(text2, pattern_absent), number=1)
+
+# bm_exist_atr1 = timeit(lambda: boyer_moore_search(text1, pattern_found), number=1)
+# bm_absent_atr1 = timeit(lambda: boyer_moore_search(text1, pattern_absent), number=1)
+# bm_exist_atr2 = timeit(lambda: boyer_moore_search(text2, pattern_found), number=1)
+# bm_absent_atr2 = timeit(lambda: boyer_moore_search(text2, pattern_absent), number=1)
+
+# rk_exist_atr1 = timeit(lambda: rabin_karp_search(text1, pattern_found), number=1)
+# rk_absent_atr1 = timeit(lambda: rabin_karp_search(text1, pattern_absent), number=1)
+# rk_exist_atr2 = timeit(lambda: rabin_karp_search(text2, pattern_found), number=1)
+# rk_absent_atr2 = timeit(lambda: rabin_karp_search(text2, pattern_absent), number=1)
+
+# print(f"KMP found for article 1: {kmp_exist_atr1:.6f} seconds")
+# print(f"BM found for article 1: {bm_exist_atr1:.6f} seconds")
+# print(f"RK found for article 1: {rk_exist_atr1:.6f} seconds")
+
+# print(f"KMP absent for article 1: {kmp_absent_atr1:.6f} seconds")
+# print(f"BM absent for article 1: {bm_absent_atr1:.6f} seconds")
+# print(f"RK absent for article 1: {rk_absent_atr1:.6f} seconds")
+
+# print(f"KMP found for article 2: {kmp_exist_atr2:.6f} seconds")
+# print(f"BM found for article 2: {bm_exist_atr2:.6f} seconds")
+# print(f"RK found for article 2: {rk_exist_atr2:.6f} seconds")
+
+# print(f"KMP absent for article 2: {kmp_absent_atr2:.6f} seconds")
+# print(f"BM absent for article 2: {bm_absent_atr2:.6f} seconds")
+# print(f"RK absent for article 2: {rk_absent_atr2:.6f} seconds")
